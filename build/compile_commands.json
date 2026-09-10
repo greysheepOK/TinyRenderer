@@ -1,0 +1,20 @@
+[
+{
+  "directory": "E:/TinyRenderer/build",
+  "command": "C:\\Users\\11715\\Desktop\\mingw64\\bin\\g++.exe   -g -o CMakeFiles\\TinyRenderer.dir\\src\\model.cpp.obj -c E:\\TinyRenderer\\src\\model.cpp",
+  "file": "E:/TinyRenderer/src/model.cpp",
+  "output": "CMakeFiles/TinyRenderer.dir/src/model.cpp.obj"
+},
+{
+  "directory": "E:/TinyRenderer/build",
+  "command": "C:\\Users\\11715\\Desktop\\mingw64\\bin\\g++.exe   -g -o CMakeFiles\\TinyRenderer.dir\\src\\main.cpp.obj -c E:\\TinyRenderer\\src\\main.cpp",
+  "file": "E:/TinyRenderer/src/main.cpp",
+  "output": "CMakeFiles/TinyRenderer.dir/src/main.cpp.obj"
+},
+{
+  "directory": "E:/TinyRenderer/build",
+  "command": "C:\\Users\\11715\\Desktop\\mingw64\\bin\\g++.exe   -g -o CMakeFiles\\TinyRenderer.dir\\src\\tgaimage.cpp.obj -c E:\\TinyRenderer\\src\\tgaimage.cpp",
+  "file": "E:/TinyRenderer/src/tgaimage.cpp",
+  "output": "CMakeFiles/TinyRenderer.dir/src/tgaimage.cpp.obj"
+}
+]
