@@ -5,6 +5,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/TinyRenderer.dir/src/model.cpp.obj.d"
   "CMakeFiles/TinyRenderer.dir/src/tgaimage.cpp.obj"
   "CMakeFiles/TinyRenderer.dir/src/tgaimage.cpp.obj.d"
+  "CMakeFiles/TinyRenderer.dir/src/triangle.cpp.obj"
+  "CMakeFiles/TinyRenderer.dir/src/triangle.cpp.obj.d"
   "TinyRenderer.exe"
   "TinyRenderer.exe.manifest"
   "TinyRenderer.pdb"

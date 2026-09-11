@@ -11,6 +11,7 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "E:/TinyRenderer/src/main.cpp" "CMakeFiles/TinyRenderer.dir/src/main.cpp.obj" "gcc" "CMakeFiles/TinyRenderer.dir/src/main.cpp.obj.d"
   "E:/TinyRenderer/src/model.cpp" "CMakeFiles/TinyRenderer.dir/src/model.cpp.obj" "gcc" "CMakeFiles/TinyRenderer.dir/src/model.cpp.obj.d"
   "E:/TinyRenderer/src/tgaimage.cpp" "CMakeFiles/TinyRenderer.dir/src/tgaimage.cpp.obj" "gcc" "CMakeFiles/TinyRenderer.dir/src/tgaimage.cpp.obj.d"
+  "E:/TinyRenderer/src/triangle.cpp" "CMakeFiles/TinyRenderer.dir/src/triangle.cpp.obj" "gcc" "CMakeFiles/TinyRenderer.dir/src/triangle.cpp.obj.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

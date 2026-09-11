@@ -136,7 +136,8 @@ CMakeFiles/TinyRenderer.dir/src/main.cpp.obj: \
  C:/Users/11715/Desktop/mingw64/lib/gcc/x86_64-w64-mingw32/8.1.0/include/c++/bits/stl_vector.h \
  C:/Users/11715/Desktop/mingw64/lib/gcc/x86_64-w64-mingw32/8.1.0/include/c++/bits/stl_bvector.h \
  C:/Users/11715/Desktop/mingw64/lib/gcc/x86_64-w64-mingw32/8.1.0/include/c++/bits/vector.tcc \
- E:\TinyRenderer\src\model.h \
+ E:\TinyRenderer\src\model.h E:\TinyRenderer\src\eigen.h \
+ E:\TinyRenderer\src\triangle.h \
  C:/Users/11715/Desktop/mingw64/lib/gcc/x86_64-w64-mingw32/8.1.0/include/c++/cmath \
  C:/Users/11715/Desktop/mingw64/x86_64-w64-mingw32/include/math.h \
  C:/Users/11715/Desktop/mingw64/lib/gcc/x86_64-w64-mingw32/8.1.0/include/c++/algorithm \

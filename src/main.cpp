@@ -1,5 +1,7 @@
 #include "tgaimage.h"
 #include "model.h"
+#include "triangle.h"
+#include "eigen.h"
 #include <cmath>
 #include <algorithm>
 #include <ctime>
@@ -10,6 +12,10 @@ constexpr TGAColor green   = {  0, 255,   0, 255};
 constexpr TGAColor red     = {  0,   0, 255, 255};
 constexpr TGAColor blue    = {255, 128,  64, 255};
 constexpr TGAColor yellow  = {  0, 200, 255, 255};
+
+bool isInTriangle(int x, int y, const Triangle& t);
+void drawLine(int x0, int y0, int x1, int y1, const TGAColor& color, TGAImage& image);
+void drawTriangle(const Triangle& t, TGAImage &framebuffer, TGAColor color);
 
 void drawLine(int x0, int y0, int x1, int y1, const TGAColor& color, TGAImage& image){
     bool steep = std::abs(x0 - x1) < std::abs(y0 - y1);
@@ -39,47 +45,83 @@ void drawLine(int x0, int y0, int x1, int y1, const TGAColor& color, TGAImage& i
     }
 }
 
+void drawTriangle(const Triangle& t, TGAImage &framebuffer, TGAColor color) {
+    std::vector<Vector3f> v = t.getVertices();
+    // drawLine(v[0].x, v[0].y, v[1].x, v[1].y, color, framebuffer);
+    // drawLine(v[1].x, v[1].y, v[2].x, v[2].y, color, framebuffer);
+    // drawLine(v[2].x, v[2].y, v[0].x, v[0].y, color, framebuffer);
+
+    //包围箱
+    int x0 = static_cast<int>(std::min(std::min(v[0].x, v[1].x), v[2].x));
+    int x1 = static_cast<int>(std::max(std::max(v[0].x, v[1].x), v[2].x));
+    int y0 = static_cast<int>(std::min(std::min(v[0].y, v[1].y), v[2].y));
+    int y1 = static_cast<int>(std::max(std::max(v[0].y, v[1].y), v[2].y));
+
+    framebuffer.set(v[0].x, v[0].y, red);
+    framebuffer.set(v[1].x, v[1].y, green);
+    framebuffer.set(v[2].x, v[2].y, blue);
+
+
+    for(int x = x0; x <= x1; x++){
+        for(int y = y0; y <= y1; y++){
+            if(isInTriangle(x, y, t)) {
+                float totalS = v[1].toVector2().minus(v[0].toVector2()).cross(v[2].toVector2().minus(v[0].toVector2()));
+                float alpha = v[1].toVector2().minus(Vector2f(x, y)).cross(v[2].toVector2().minus(Vector2f(x, y))) / totalS;
+                float beta = v[2].toVector2().minus(Vector2f(x, y)).cross(v[0].toVector2().minus(Vector2f(x, y))) / totalS;
+                float gamma = v[0].toVector2().minus(Vector2f(x, y)).cross(v[1].toVector2().minus(Vector2f(x, y))) / totalS;
+                framebuffer.set(x, y, TGAColor{static_cast<uint8_t>(alpha * red[0] + beta * green[0] + gamma * blue[0]),
+                                            static_cast<uint8_t>(alpha * red[1] + beta * green[1] + gamma * blue[1]),
+                                            static_cast<uint8_t>(alpha * red[2] + beta * green[2] + gamma * blue[2]),
+                                            255});
+            }
+        }
+    }
+    return;
+}
+
+bool isInTriangle(int x, int y, const Triangle& t){
+    Vector2f point(x, y);
+
+    std::vector<Vector3f> v = t.getVertices();
+
+    float a = (point.minus(v[0].toVector2())).cross(v[1].toVector2().minus(v[0].toVector2())),
+        b = (point.minus(v[1].toVector2())).cross(v[2].toVector2().minus(v[1].toVector2())),
+        c = (point.minus(v[2].toVector2())).cross(v[0].toVector2().minus(v[2].toVector2()));
+
+    if(a >= 0. && b >= 0. && c >= 0. || a <= 0. && b <= 0. && c <= 0.) return true;
+    else return false;
+}
+
+
 
 int main(int argc, char** argv) {
-    constexpr int width  = 800;
-    constexpr int height = 800;
+    constexpr int width  = 120;
+    constexpr int height = 120;
     TGAImage framebuffer(width, height, TGAImage::RGB);
 
-// int ax =  7, ay =  3;
-// int bx = 12, by = 37;
-// int cx = 62, cy = 53;
+    // Model model("obj/african_head/african_head.obj");
+    // auto vertices = model.getVertices();
+    // auto faces = model.getFaces();
+    // for(auto& v: vertices){ //视口变换
+    //     v.x = v.x * width/2 + width/2;
+    //     v.y = v.y * height/2 + height/2;
+    // }
+    // TGAColor rnd;
+    // for(auto f:faces){
+    //     // drawLine(vertices[f[0]].x, vertices[f[0]].y, vertices[f[1]].x, vertices[f[1]].y, red, framebuffer);
+    //     // drawLine(vertices[f[1]].x, vertices[f[1]].y, vertices[f[2]].x, vertices[f[2]].y, red, framebuffer);
+    //     // drawLine(vertices[f[2]].x, vertices[f[2]].y, vertices[f[0]].x, vertices[f[0]].y, red, framebuffer);
 
-// drawLine(ax, ay, bx, by, green, framebuffer);
-// drawLine(bx, by, cx, cy, blue, framebuffer);
-// drawLine(cx, cy, ax, ay, red, framebuffer);
-// drawLine(ax, ay, cx, cy, yellow, framebuffer);
+    //     for (int c=0; c<3; c++) rnd[c] = std::rand()%255;
+    //     drawTriangle(Triangle(vertices[f[0]], vertices[f[1]], vertices[f[2]]), framebuffer, rnd);
+    // }
 
-// framebuffer.set(ax, ay, white);
-// framebuffer.set(bx, by, white);
-// framebuffer.set(cx, cy, white);
+    Triangle t1(Vector3f{7, 45, 0}, Vector3f{35, 100, 0}, Vector3f{45, 60, 0});
+    drawTriangle(t1, framebuffer, red);
 
-// std::srand(std::time({}));
-// for (int i=0; i<(1<<24); i++) {
-//     int ax = rand()%width, ay = rand()%height;
-//     int bx = rand()%width, by = rand()%height;
-//     drawLine(ax, ay, bx, by, { static_cast<uint8_t>(rand()%255), static_cast<uint8_t>(rand()%255), static_cast<uint8_t>(rand()%255), static_cast<uint8_t>(rand()%255) }, framebuffer);
-// }
-
-    Model model("obj/diablo3_pose/diablo3_pose.obj");
-
-    auto vertices = model.getVertices();
-    auto faces = model.getFaces();
-    for(auto& v: vertices){
-        v.x = v.x * width/2 + width/2;
-        v.y = v.y * height/2 + height/2;
-    }
-
-    for(auto f:faces){
-        drawLine(vertices[f[0]].x, vertices[f[0]].y, vertices[f[1]].x, vertices[f[1]].y, red, framebuffer);
-        drawLine(vertices[f[1]].x, vertices[f[1]].y, vertices[f[2]].x, vertices[f[2]].y, red, framebuffer);
-        drawLine(vertices[f[2]].x, vertices[f[2]].y, vertices[f[0]].x, vertices[f[0]].y, red, framebuffer);
-    }
 
     framebuffer.write_tga_file("framebuffer.tga");
     return 0;
+
 }
+

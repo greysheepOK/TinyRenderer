@@ -1,12 +1,7 @@
 #pragma once
 
 #include<vector>
-
-struct Vector3f{
-    float x;
-    float y;
-    float z;
-};
+#include "eigen.h"
 
 class Model{
 
