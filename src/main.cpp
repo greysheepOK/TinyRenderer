@@ -14,10 +14,13 @@ constexpr TGAColor red     = {  0,   0, 255, 255};
 constexpr TGAColor blue    = {255, 128,  64, 255};
 constexpr TGAColor yellow  = {  0, 200, 255, 255};
 
+const double PI = std::acos(-1);
+
 bool isInTriangle(int x, int y, const Triangle& t);
 void drawLine(int x0, int y0, int x1, int y1, const TGAColor& color, TGAImage& image);
 void drawTriangle(const Triangle& t, TGAImage &framebuffer, TGAImage& zbuf, TGAColor color, std::vector<float>& zbuffer);
-int getIndex(int x, int y, int width);
+int getIndex(int x, int y, int width); // 获取视口上某一像素在zbuffer数组中的序号
+Vector3f rotate(const Vector3f& v);
 
 void drawLine(int x0, int y0, int x1, int y1, const TGAColor& color, TGAImage& image){
     bool steep = std::abs(x0 - x1) < std::abs(y0 - y1);
@@ -110,6 +113,12 @@ int getIndex(int x, int y, int width){
     return x + y * width;
 }
 
+Vector3f rotate(const Vector3f& v){
+    return Matrix3f(std::cos(30.0f/180 * PI), 0, std::sin(30.0f/180 * PI),
+                    0, 1, 0,
+                    -std::sin(30.0f/180 * PI), 0, std::cos(30.0f/180 * PI)) * v;
+}
+
 int main(int argc, char** argv) {
     constexpr int width  = 800;
     constexpr int height = 800;
@@ -117,9 +126,14 @@ int main(int argc, char** argv) {
     TGAImage framebuffer(width, height, TGAImage::RGB);
     std::vector<float> zbuffer(width * height, -INFINITY);//深度储存
 
-    Model model("obj\\diablo3_pose\\diablo3_pose.obj");
+    Model model("obj\\african_head\\african_head.obj");
     auto vertices = model.getVertices();
     auto faces = model.getFaces();
+
+    for(auto& v: vertices){
+        v = rotate(v);
+    }
+
     for(auto& v: vertices){ //视口变换
         v.x = v.x * width/2 + width/2;
         v.y = v.y * height/2 + height/2;
