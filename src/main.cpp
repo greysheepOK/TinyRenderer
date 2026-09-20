@@ -113,12 +113,6 @@ int getIndex(int x, int y, int width){
     return x + y * width;
 }
 
-Vector3f rotate(const Vector3f& v){
-    return Matrix3f(std::cos(30.0f/180 * PI), 0, std::sin(30.0f/180 * PI),
-                    0, 1, 0,
-                    -std::sin(30.0f/180 * PI), 0, std::cos(30.0f/180 * PI)) * v;
-}
-
 int main(int argc, char** argv) {
     constexpr int width  = 800;
     constexpr int height = 800;
@@ -130,15 +124,47 @@ int main(int argc, char** argv) {
     auto vertices = model.getVertices();
     auto faces = model.getFaces();
 
-    for(auto& v: vertices){
-        v = rotate(v);
+    float zNear = -2, zFar = -4, fov = 45, aspect = (float)width / height;
+
+    float t = std::abs(zNear * std::tan(fov/ 2 / 180 * PI)), b = -t, r = aspect * t, l = -r;
+
+    Matrix4f m(std::cos(30.0f/180 * PI), 0, std::sin(30.0f/180 * PI), 0,
+                0, 1, 0, 0,
+                -std::sin(30.0f/180 * PI), 0, std::cos(30.0f/180 * PI), -3,
+                0, 0, 0, 1);//模型变换矩阵，负责将原模型绕y轴旋转30度、平移至[-2,-4]上
+
+    Matrix4f v;//视图变换矩阵，负责将相机平移至原点并看向z轴负半轴。我们模型变换矩阵已经完成。
+
+    Matrix4f p;//透视投影矩阵，负责计算透视投影后点的坐标。
+
+    Matrix4f p2o(zNear, 0, 0, 0,
+                0, zNear, 0, 0,
+                0, 0, zNear + zFar, -zNear * zFar,
+                0, 0, 1, 0);//压缩视锥体以便正交投影
+    
+    Matrix4f ortho(2/(r-l), 0, 0, -(r+l)/(r-l),
+                    0, 2/(t-b), 0, -(t+b)/(t-b),
+                    0, 0, 2/(zNear-zFar), -(zFar+zNear)/(zNear-zFar),//由于规定的n和f为距离绝对值
+                    0, 0, 0, 1);//正交投影矩阵
+
+    p = ortho * p2o;
+
+    Matrix4f mvp = p * v * m;
+    
+    for(auto& v: vertices){ //mvp+视口变换
+
+        Vector4f v2 = v.toVector4Point();//转变为齐次坐标
+        v2 = mvp * v2;
+
+        v2 = v2 / v2.w;
+
+        v2.x = v2.x * width/2 + width/2;
+        v2.y = v2.y * height/2 + height/2;
+        v2.z = v2.z * 255/2 + 255 / 2;
+
+        v = v2.toVector3();
     }
 
-    for(auto& v: vertices){ //视口变换
-        v.x = v.x * width/2 + width/2;
-        v.y = v.y * height/2 + height/2;
-        v.z = v.z * 255/2 + 255/2;
-    }
     TGAColor rnd;
     for(auto f:faces){
         // drawLine(vertices[f[0]].x, vertices[f[0]].y, vertices[f[1]].x, vertices[f[1]].y, red, framebuffer);
