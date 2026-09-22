@@ -107,4 +107,5 @@ struct Matrix4f{
                         m30 * other.m02 + m31 * other.m12 + m32 * other.m22 + m33 * other.m32,
                         m30 * other.m03 + m31 * other.m13 + m32 * other.m23 + m33 * other.m33};
     }
+
 };
