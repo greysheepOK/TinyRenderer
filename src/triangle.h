@@ -1,13 +1,16 @@
 #pragma once
 
 #include "eigen.h"
-#include <vector>
+#include <array>
 
 class Triangle{
 public:
-    Triangle(const Vector3f& a, const Vector3f& b, const Vector3f& c);
-    std::vector<Vector3f> getVertices() const {return vertices;};
+    Triangle(const Vector4f& a, const Vector4f& b, const Vector4f& c);
+    Triangle(const Vector4f& a, const Vector4f& b, const Vector4f& c, const Vector3f& n1, const Vector3f& n2, const Vector3f& n3);
+    std::array<Vector4f, 3> getVertices() const {return vertices;};
+    std::array<Vector3f, 3> getNormals() const {return normals;};
 
 private:
-    std::vector<Vector3f> vertices;
+    std::array<Vector4f, 3> vertices;
+    std::array<Vector3f, 3> normals;
 };
