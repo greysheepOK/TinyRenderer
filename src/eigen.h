@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+
 struct Vector2f;
 struct Vector3f;
 struct Vector4f;
@@ -25,6 +27,22 @@ struct Vector3f{
 
     Vector2f toVector2(){ return Vector2f(x, y);}
     Vector4f toVector4Point();
+    Vector3f normalized(){ return *this / std::sqrt(x*x + y*y + z*z); }
+
+    Vector3f operator+(const Vector3f& other) const {
+        return Vector3f(x + other.x, y + other.y, z + other.z);
+    }
+
+    Vector3f operator+(const float& other) const {
+        return Vector3f(x + other, y + other, z + other);
+    }
+    
+    Vector3f operator/ (float div) const {
+        return Vector3f(x/div, y/div, z/div);
+    }
+    Vector3f operator* (float mul) const {
+        return Vector3f(x*mul, y*mul, z*mul);
+    }
 };
 
 struct Vector4f{
