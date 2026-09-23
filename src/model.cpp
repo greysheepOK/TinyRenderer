@@ -25,17 +25,27 @@ Model::Model(const char* filename){
             iss >> v.x >> v.y >> v.z;
             vertices.push_back(v);
         }
+        else if (!line.compare(0, 3, "vn ")){
+            iss >> trash;
+
+            Vector3f n;
+            iss >> n.x >> n.y >> n.z;
+            norm_coords.push_back(n);
+        }
         else if (!line.compare(0, 2, "f ")){
             iss >> trash;
 
             char trash2; //吞掉斜杠
             std::vector<int> face;
+            std::vector<int> normal;
             int v, vt, vn;
 
             while(iss >> v >> trash2 >> vt >> trash2 >> vn){ //若f行仍有数据组未读取完毕
                 face.push_back(v - 1); //注意f保存的序号从1开始，转换为数组要-1
+                normal.push_back(vn - 1);
             }
             faces.push_back(face);
+            normals.push_back(normal);
         }
     }
 
