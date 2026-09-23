@@ -2,6 +2,7 @@
 #include "model.h"
 #include "triangle.h"
 #include "eigen.h"
+#include "our_gl.h"
 #include <cmath>
 #include <algorithm>
 #include <ctime>
@@ -16,113 +17,60 @@ constexpr TGAColor yellow  = {  0, 200, 255, 255};
 
 const double PI = std::acos(-1);
 
-bool isInTriangle(int x, int y, const Triangle& t);
-void drawLine(int x0, int y0, int x1, int y1, const TGAColor& color, TGAImage& image);
-void drawTriangle(const Triangle& t, TGAImage &framebuffer, TGAImage& zbuf, TGAColor color, std::vector<float>& zbuffer);
-int getIndex(int x, int y, int width); // 获取视口上某一像素在zbuffer数组中的序号
-Vector3f rotate(const Vector3f& v);
+//void drawLine(int x0, int y0, int x1, int y1, const TGAColor& color, TGAImage& image);
 
-void drawLine(int x0, int y0, int x1, int y1, const TGAColor& color, TGAImage& image){
-    bool steep = std::abs(x0 - x1) < std::abs(y0 - y1);
-    
-    if(steep){
-        std::swap(x0, y0);
-        std::swap(x1, y1);
+// void drawLine(int x0, int y0, int x1, int y1, const TGAColor& color, TGAImage& image){
+//     bool steep = std::abs(x0 - x1) < std::abs(y0 - y1);
+//     if(steep){
+//         std::swap(x0, y0);
+//         std::swap(x1, y1);
+//     }
+//     if(x0 > x1){
+//         std::swap(x0, x1);
+//         std::swap(y0, y1);
+//     }
+//     int y = y0;
+//     int ierror = 0;
+//     for(int x = x0; x <= x1; x += 1){
+//         if(steep) image.set(y, x, color);
+//         else image.set(x, y, color);
+//         ierror += 2 * std::abs((y1 - y0));
+//         if(ierror > x1 - x0){
+//             y += y1 > y0 ? 1 : -1;
+//             ierror -= 2 * (x1 - x0);
+//         }
+//     }
+// }
+
+struct normal_shader : public IShader{ //针对当前fragment的法线着色器
+    std::array<Vector3f, 3> normals;
+    std::array<Vector4f, 3> vertexs;
+    normal_shader(const std::array<Vector3f, 3>& n, const std::array<Vector4f, 3>& v): normals(n), vertexs(v){}
+
+    virtual std::pair<bool, TGAColor>fragment(const Vector3f& bary_coords)const override{
+        //先计算当前像素的法线
+        float Z = 1.0f / (bary_coords.x / vertexs[0].w + bary_coords.y / vertexs[1].w + bary_coords.z / vertexs[2].w);
+        Vector3f normal = ((normals[0] / vertexs[0].w * bary_coords.x + normals[1] / vertexs[1].w * bary_coords.y + normals[2] / vertexs[2].w * bary_coords.z) * Z).normalized();
+        normal = (normal + 1) / 2; //映射到[0, 1]
+        return std::pair<bool, TGAColor>(false, TGAColor{
+            static_cast<std::uint8_t>(normal.z * 255.0f),
+            static_cast<std::uint8_t>(normal.y * 255.0f),
+            static_cast<std::uint8_t>(normal.x * 255.0f),
+            255
+        });
     }
 
-    if(x0 > x1){
-        std::swap(x0, x1);
-        std::swap(y0, y1);
-    }
-
-    int y = y0;
-    int ierror = 0;
-    for(int x = x0; x <= x1; x += 1){
-
-        if(steep) image.set(y, x, color);
-        else image.set(x, y, color);
-        
-        ierror += 2 * std::abs((y1 - y0));
-        if(ierror > x1 - x0){
-            y += y1 > y0 ? 1 : -1;
-            ierror -= 2 * (x1 - x0);
-        }
-    }
-}
-
-void drawTriangle(const Triangle& t, TGAImage &framebuffer, TGAImage& zbuf, TGAColor color, std::vector<float>& zbuffer) {
-    std::vector<Vector3f> v = t.getVertices();
-    // drawLine(v[0].x, v[0].y, v[1].x, v[1].y, color, framebuffer);
-    // drawLine(v[1].x, v[1].y, v[2].x, v[2].y, color, framebuffer);
-    // drawLine(v[2].x, v[2].y, v[0].x, v[0].y, color, framebuffer);
-
-    //包围箱
-    int x0 = std::floor(std::min(std::min(v[0].x, v[1].x), v[2].x));
-    int x1 = std::ceil(std::max(std::max(v[0].x, v[1].x), v[2].x));
-    x0 = std::max(x0, 0);
-    x1 = std::min(x1, framebuffer.width() - 1);
-    int y0 = std::floor(std::min(std::min(v[0].y, v[1].y), v[2].y));
-    int y1 = std::ceil(std::max(std::max(v[0].y, v[1].y), v[2].y));
-    y0 = std::max(y0, 0);
-    y1 = std::min(y1, framebuffer.height() - 1);
-
-    // framebuffer.set(v[0].x, v[0].y, red);
-    // framebuffer.set(v[1].x, v[1].y, green);
-    // framebuffer.set(v[2].x, v[2].y, blue);
-
-
-    for(int x = x0; x <= x1; x++){
-        for(int y = y0; y <= y1; y++){
-            if(isInTriangle(x, y, t)) {
-                float totalS = v[1].toVector2().minus(v[0].toVector2()).cross(v[2].toVector2().minus(v[0].toVector2()));
-                float alpha = v[1].toVector2().minus(Vector2f(x + 0.5, y + 0.5)).cross(v[2].toVector2().minus(Vector2f(x + 0.5, y + 0.5))) / totalS;
-                float beta = v[2].toVector2().minus(Vector2f(x + 0.5, y + 0.5)).cross(v[0].toVector2().minus(Vector2f(x + 0.5, y + 0.5))) / totalS;
-                float gamma = v[0].toVector2().minus(Vector2f(x + 0.5, y + 0.5)).cross(v[1].toVector2().minus(Vector2f(x + 0.5, y + 0.5))) / totalS;
-
-                // framebuffer.set(x, y, TGAColor{static_cast<uint8_t>(alpha * red[0] + beta * green[0] + gamma * blue[0]),
-                //                             static_cast<uint8_t>(alpha * red[1] + beta * green[1] + gamma * blue[1]),
-                //                             static_cast<uint8_t>(alpha * red[2] + beta * green[2] + gamma * blue[2]),
-                //                             255});
-
-                float z = alpha * v[0].z + beta * v[1].z + gamma * v[2].z;
-                if(z > zbuffer[getIndex(x, y, framebuffer.width())]){
-                    framebuffer.set(x, y, color);
-                    zbuf.set(x, y, {static_cast<uint8_t> (z)});
-                    zbuffer[getIndex(x, y, framebuffer.width())] = z;
-                }
-            }
-        }
-    }
-    return;
-}
-
-bool isInTriangle(int x, int y, const Triangle& t){
-    Vector2f point(x + 0.5, y + 0.5);
-
-    std::vector<Vector3f> v = t.getVertices();
-
-    float a = (point.minus(v[0].toVector2())).cross(v[1].toVector2().minus(v[0].toVector2())),
-        b = (point.minus(v[1].toVector2())).cross(v[2].toVector2().minus(v[1].toVector2())),
-        c = (point.minus(v[2].toVector2())).cross(v[0].toVector2().minus(v[2].toVector2()));
-
-    if(a >= 0. && b >= 0. && c >= 0. || a <= 0. && b <= 0. && c <= 0.) return true;
-    else return false;
-}
-
-int getIndex(int x, int y, int width){
-    return x + y * width;
-}
+};
 
 int main(int argc, char** argv) {
     constexpr int width  = 800;
     constexpr int height = 800;
-    TGAImage zbuf (width, height, TGAImage::GRAYSCALE);
-    TGAImage framebuffer(width, height, TGAImage::RGB);
-    std::vector<float> zbuffer(width * height, -INFINITY);//深度储存
 
     Model model("obj\\african_head\\african_head.obj");
     auto vertices = model.getVertices();
+    auto norm_coords = model.getNormCoords();
     auto faces = model.getFaces();
+    auto normals = model.getNormals();
 
     float zNear = -2, zFar = -4, fov = 45, aspect = (float)width / height;
 
@@ -150,33 +98,33 @@ int main(int argc, char** argv) {
     p = ortho * p2o;
 
     Matrix4f mvp = p * v * m;
-    
+
+    std::vector<Vector4f> verts;
+
     for(auto& v: vertices){ //mvp+视口变换
 
         Vector4f v2 = v.toVector4Point();//转变为齐次坐标
         v2 = mvp * v2;
+        const float clip_w = v2.w;
+        v2 = v2 / clip_w;
+        v2.w = clip_w;
 
-        v2 = v2 / v2.w;
+        v2.x = v2.x * width/2.0f + width/2.0f;
+        v2.y = v2.y * height/2.0f + height/2.0f;
+        v2.z = v2.z * 255/2.0f + 255 / 2.0f;
 
-        v2.x = v2.x * width/2 + width/2;
-        v2.y = v2.y * height/2 + height/2;
-        v2.z = v2.z * 255/2 + 255 / 2;
-
-        v = v2.toVector3();
+        verts.push_back(v2);
     }
 
-    TGAColor rnd;
-    for(auto f:faces){
-        // drawLine(vertices[f[0]].x, vertices[f[0]].y, vertices[f[1]].x, vertices[f[1]].y, red, framebuffer);
-        // drawLine(vertices[f[1]].x, vertices[f[1]].y, vertices[f[2]].x, vertices[f[2]].y, red, framebuffer);
-        // drawLine(vertices[f[2]].x, vertices[f[2]].y, vertices[f[0]].x, vertices[f[0]].y, red, framebuffer);
-
-        for (int c=0; c<3; c++) rnd[c] = std::rand()%255;
-        drawTriangle(Triangle(vertices[f[0]], vertices[f[1]], vertices[f[2]]), framebuffer, zbuf, rnd, zbuffer);
+    Rasterizer rast(width, height, 4);
+    rast.clear();
+    for(int i = 0; i < faces.size(); i++){
+        std::array<Vector3f, 3> norms = {norm_coords[normals[i][0]].normalized(), norm_coords[normals[i][1]].normalized(), norm_coords[normals[i][2]].normalized()};
+        std::array<Vector4f, 3> triangle_vertices = {verts[faces[i][0]], verts[faces[i][1]], verts[faces[i][2]]};
+        rast.rasterize(Triangle(triangle_vertices[0], triangle_vertices[1], triangle_vertices[2], norms[0], norms[1], norms[2]), normal_shader(norms, triangle_vertices));
     }
 
-    framebuffer.write_tga_file("framebuffer.tga");
-    zbuf.write_tga_file("zbuffer.tga");
+    rast.framebuffer.write_tga_file("framebuffer.tga");
     return 0;
 }
 
