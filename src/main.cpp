@@ -42,7 +42,7 @@ const double PI = std::acos(-1);
 //     }
 // }
 
-struct normal_shader : public IShader{ //针对当前fragment的法线着色器
+struct normal_shader : public IShader{ //针对当前fragment的法线输出法线贴图
     std::array<Vector3f, 3> normals;
     std::array<Vector4f, 3> vertexs;
     normal_shader(const std::array<Vector3f, 3>& n, const std::array<Vector4f, 3>& v): normals(n), vertexs(v){}
@@ -59,8 +59,46 @@ struct normal_shader : public IShader{ //针对当前fragment的法线着色器
             255
         });
     }
-
 };
+
+struct phong_shader : public IShader{
+    std::array<Vector3f, 3> normals;
+    std::array<Vector4f, 3> vertexs;
+    std::array<Vector3f, 3> word_coords;
+
+    float kd, ks, ka;
+    float p;
+
+    Vector3f eye_pos;
+    Light l;
+
+    phong_shader(const std::array<Vector3f, 3>& n, const std::array<Vector4f, 3>& v, const std::array<Vector3f, 3>& w, float kd_, float ks_, float ka_, float p_, Vector3f eye_pos, Light light): normals(n), vertexs(v), word_coords(w), kd(kd_), ks(ks_), ka(ka_), p(p_), eye_pos(eye_pos), l(light){}
+
+    virtual std::pair<bool, TGAColor>fragment(const Vector3f& bary_coords)const override{
+        //先计算当前像素的原始法线
+        float Z = 1.0f / (bary_coords.x / vertexs[0].w + bary_coords.y / vertexs[1].w + bary_coords.z / vertexs[2].w);
+        Vector3f normal = ((normals[0] / vertexs[0].w * bary_coords.x + normals[1] / vertexs[1].w * bary_coords.y + normals[2] / vertexs[2].w * bary_coords.z) * Z).normalized();
+
+        Vector3f coords = (word_coords[0] / vertexs[0].w * bary_coords.x + word_coords[1] / vertexs[1].w * bary_coords.y + word_coords[2] / vertexs[2].w * bary_coords.z) * Z;
+        Vector3f light_dir = (l.position - coords).normalized();
+        Vector3f eye_dir = (eye_pos - coords).normalized();
+        float light_distance = (l.position - coords).length();
+
+        Vector3f ambient_light_intensity = {100.0f, 100.0f, 100.0f};
+
+        Vector3f la = ambient_light_intensity * ka;
+        Vector3f ls = l.intensity / (light_distance * light_distance) * ks * std::pow(std::max(0.0f, normal * (light_dir + eye_dir).normalized()), p);
+        Vector3f ld = l.intensity / (light_distance * light_distance) * kd * std::max(0.0f, normal * light_dir);
+
+        Vector3f final_color =  la + ls + ld;
+        final_color.x = final_color.x > 255.0f ? 255.0 : final_color.x;
+        final_color.y = final_color.y > 255.0f ? 255.0 : final_color.y;
+        final_color.z = final_color.z > 255.0f ? 255.0 : final_color.z;
+
+        return std::pair<bool, TGAColor>(false, TGAColor{final_color.z, final_color.y, final_color.x, 255});
+    }
+};
+
 
 int main(int argc, char** argv) {
     constexpr int width  = 800;
@@ -121,10 +159,9 @@ int main(int argc, char** argv) {
     for(int i = 0; i < faces.size(); i++){
         std::array<Vector3f, 3> norms = {norm_coords[normals[i][0]].normalized(), norm_coords[normals[i][1]].normalized(), norm_coords[normals[i][2]].normalized()};
         std::array<Vector4f, 3> triangle_vertices = {verts[faces[i][0]], verts[faces[i][1]], verts[faces[i][2]]};
-        rast.rasterize(Triangle(triangle_vertices[0], triangle_vertices[1], triangle_vertices[2], norms[0], norms[1], norms[2]), normal_shader(norms, triangle_vertices));
+        rast.rasterize(Triangle(triangle_vertices[0], triangle_vertices[1], triangle_vertices[2], norms[0], norms[1], norms[2]), phong_shader({m.toMatrix3f() * norms[0], m.toMatrix3f() * norms[1], m.toMatrix3f() * norms[2]}, triangle_vertices, {(m * vertices[faces[i][0]].toVector4Point()).toVector3(), (m * vertices[faces[i][1]].toVector4Point()).toVector3(), (m * vertices[faces[i][2]].toVector4Point()).toVector3()}, 0.6f, 0.5f, 0.1f, 32.0f, Vector3f(0, 0, 3), Light(Vector3f(0, 0, 3), Vector3f(1000, 1000, 1000))));
     }
 
     rast.framebuffer.write_tga_file("framebuffer.tga");
     return 0;
 }
-

@@ -34,14 +34,13 @@ void Rasterizer::rasterize(const Triangle& t, const IShader& shader) {
     y1 = std::min(y1, framebuffer.height() - 1);
 
     const float totalS = Vector2f(v[1].x, v[1].y).minus(Vector2f(v[0].x, v[0].y)).cross(Vector2f(v[2].x, v[2].y).minus(Vector2f(v[0].x, v[0].y)));
-    //if (std::abs(totalS) < 1e-6f || x0 > x1 || y0 > y1) return;
 
     for(int x = x0; x <= x1; x++){
         for(int y = y0; y <= y1; y++){
                 float alpha = Vector2f(v[1].x, v[1].y).minus(Vector2f(x + 0.5, y + 0.5)).cross(Vector2f(v[2].x, v[2].y).minus(Vector2f(x + 0.5, y + 0.5))) / totalS;
                 float beta = Vector2f(v[2].x, v[2].y).minus(Vector2f(x + 0.5, y + 0.5)).cross(Vector2f(v[0].x, v[0].y).minus(Vector2f(x + 0.5, y + 0.5))) / totalS;
                 float gamma = Vector2f(v[0].x, v[0].y).minus(Vector2f(x + 0.5, y + 0.5)).cross(Vector2f(v[1].x, v[1].y).minus(Vector2f(x + 0.5, y + 0.5))) / totalS;
-            if(alpha < 0 || beta < 0 || gamma < 0) continue;
+            if(alpha < 0 || beta < 0 || gamma < 0) continue; //直接使用重心坐标判定像素是否位于三角形内部
             float z = alpha * v[0].z + beta * v[1].z + gamma * v[2].z;
 
             auto pair = shader.fragment(Vector3f(alpha, beta, gamma));

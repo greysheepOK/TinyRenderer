@@ -8,6 +8,13 @@ struct IShader{
     virtual std::pair<bool,TGAColor> fragment(const Vector3f& baryCoords) const = 0; //bool值true表该像素是否被丢弃
 };
 
+struct Light{
+    Vector3f position;
+    Vector3f intensity;
+
+    Light(const Vector3f& pos, const Vector3f& inten): position(pos), intensity(inten){}
+};
+
 class Rasterizer{
 public:
     Rasterizer(int width, int height, int TGAColorEnum);

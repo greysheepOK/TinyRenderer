@@ -28,6 +28,7 @@ struct Vector3f{
     Vector2f toVector2(){ return Vector2f(x, y);}
     Vector4f toVector4Point();
     Vector3f normalized(){ return *this / std::sqrt(x*x + y*y + z*z); }
+    float length(){ return std::sqrt(x*x + y*y + z*z); }
 
     Vector3f operator+(const Vector3f& other) const {
         return Vector3f(x + other.x, y + other.y, z + other.z);
@@ -37,11 +38,19 @@ struct Vector3f{
         return Vector3f(x + other, y + other, z + other);
     }
     
+    Vector3f operator-(const Vector3f& other) const {
+        return Vector3f(x - other.x, y - other.y, z - other.z);
+    }
+
     Vector3f operator/ (float div) const {
         return Vector3f(x/div, y/div, z/div);
     }
     Vector3f operator* (float mul) const {
         return Vector3f(x*mul, y*mul, z*mul);
+    }
+
+    float operator*(const Vector3f& other) const { //点积
+        return x * other.x + y * other.y + z * other.z;
     }
 };
 
@@ -126,4 +135,9 @@ struct Matrix4f{
                         m30 * other.m03 + m31 * other.m13 + m32 * other.m23 + m33 * other.m33};
     }
 
+    Matrix3f toMatrix3f() const{
+        return Matrix3f{m00, m01, m02,
+                        m10, m11, m12,
+                        m20, m21, m22};
+    }
 };
